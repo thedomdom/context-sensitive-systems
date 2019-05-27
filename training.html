@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Training</title>
+    <link rel="stylesheet" href="./training.css">
+
+    <script>
+
+        // Global variables to store current values.
+        let orientation_buf;
+
+        //make constructor to easily initialize all arrays
+        function OrientationValues() {
+            return {
+                alpha: [],
+                beta: [],
+                gamma: [],
+            }
+        }
+
+        orientation_buf = new OrientationValues(); // start empty
+
+        // How many data points are uploaded per second?
+        const UPLOAD_RATE = 20;
+        // How many data points have been recorded/uploaded so far?
+        let dataCount = 0;
+
+        let write = function () {
+            document.getElementById("debug").innerHTML = "DataBase not Connected!"
+        };
+
+        let interval;// Global variable for setInterval setting/clearing.
+
+        startRecording = function () {
+            let label = document.getElementById("label").value;
+            let subject = document.getElementById("subject").value;
+
+            if (label) {
+                // If training label is selected
+                document.getElementById("debug").innerHTML = "Recording... (" + dataCount + ")";
+                window.clearInterval(interval);
+
+                // Write DeviceOrientation to buffer
+                if (window.DeviceOrientationEvent) {
+                    window.addEventListener('deviceorientation', function (orientation) {
+                        // Read and store all acceleration and rotation values.
+                        if (!isNaN(parseFloat(orientation.alpha))) {
+                            orientation_buf.alpha.push(orientation.alpha);
+                        }
+                        if (!isNaN(parseFloat(orientation.beta))) {
+                            orientation_buf.beta.push(orientation.beta);
+                        }
+                        if (!isNaN(parseFloat(orientation.gamma))) {
+                            orientation_buf.gamma.push(orientation.gamma);
+                        }
+                    }, false);
+                    interval = window.setInterval(write, 1000 / UPLOAD_RATE);
+                } else {
+                    document.getElementById("debug").innerHTML = "DeviceOrientation not supported.";
+                }
+
+            } else {
+                // If no training label is selected
+                this.checked = false;
+                document.getElementById("debug").innerHTML = "Select training label first!";
+            }
+        };
+
+        const stopRecording = function () {
+            window.clearInterval(interval);
+            write();
+            document.getElementById("debug").innerHTML = "Not recording.";
+            dataCount = 0;
+        };
+
+        document.addEventListener("DOMContentLoaded", function () {
+            document.getElementById('record').onchange = function () {
+                if (this.checked) {
+                    // If slider activated
+                    startRecording();
+
+                } else {
+                    // If slider deactivated
+                    stopRecording()
+                }
+            }
+        });
+
+    influent
+        .createHttpClient({
+            server: [
+                {
+                    protocol: "http",
+                    host:     location.hostname,
+                    port: 8086
+                    //protocol: "https",
+                    //host:     "portal.teco.edu/css",
+                    //port: 443
+                }
+            ],
+            username: "css19",
+            password: "css19",
+
+            database: "css19"
+        })
+        .then(function(client) {
+            //set the write function to empty our buffer (called periodically, see above)
+            write=function()
+            {
+                if(orientation_buf.alpha.length>0)
+                {
+                    data_count++;
+
+                    var v=orientation_buf; //copy old buffer to var to avoid async effects on write
+                    orientation_buf=new OrientationValues(); // reset buffer
+
+                    function milli_mean_int(values) {
+                        var sum = values.reduce(function(a, b) { return a + b; });
+                        return Math.floor(sum * 1000 / values.length);
+                    }
+
+                    client.write({
+                        key: "orientation",
+                        tags: {
+                            label: document.getElementById("label").value,
+                            subject: document.getElementById("subject").value
+                        },
+                        fields: {
+                            count: data_count, // debug var to identify missing values...
+                            alpha: milli_mean_int(v.alpha), //use mean * 1000 (int for efficiency)
+                            beta: milli_mean_int(v.beta),
+                            gamma: milli_mean_int(v.gamma)
+                        },
+                        timestamp: (Date.now() * 1000000)
+                    })
+                        .then(function() {
+                            document.getElementById("debug").innerHTML = "Recording... (" + data_count + ")";
+                        });
+                }
+            }
+        })
+
+    </script>
+</head>
+<div class="main">
+    <form>
+
+        <b>Label:</b><br>
+        <select id="label">
+            <option value=Testing">Testing</option>
+            <option value="Walking">Walking</option>
+            <option value="Jumping">Standing</option>
+            <option value="Sitting">Sitting</option>
+        </select><br>
+
+        <b>Record:</b><br>
+        <label class="switch">
+            <input type="checkbox" id="record">
+            <div class="slider round"></div>
+        </label>
+        <br>
+
+        <b>Subject:</b><br>
+        <input type="text" id="subject"><br>
+    </form>
+
+    <br>
+
+    <p id="debug">Not recording.</p>
+
+</div>
+
+</html>
