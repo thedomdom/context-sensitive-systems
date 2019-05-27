@@ -21,24 +21,69 @@
 
         orientation_buf = new OrientationValues(); // start empty
 
-        // How many data points are uploaded per second?
-        const UPLOAD_RATE = 20;
-        // How many data points have been recorded/uploaded so far?
-        let dataCount = 0;
+        const UPLOAD_RATE = 20; // How many data points are uploaded per second?
+        let dataCount = 0; // How many data points have been recorded/uploaded so far?
 
         let write = function () {
-            document.getElementById("debug").innerHTML = "DataBase not Connected!"
+            if (orientation_buf.alpha.length > 0) {
+                dataCount++;
+
+                let v = orientation_buf; //copy old buffer to var to avoid async effects on write
+                orientation_buf = new OrientationValues(); // reset buffer
+
+                function milli_mean_int(values) {
+                    let sum = values.reduce(function (a, b) {
+                        return a + b;
+                    });
+                    return Math.floor(sum * 1000 / values.length);
+                }
+
+                let labelDropdown = document.getElementById("label");
+
+                let databaseEntry = {
+                    key: "orientation",
+                    tags: {
+                        label: labelDropdown.options[labelDropdown.selectedIndex].text,
+                        subject: document.getElementById("subject").value
+                    },
+                    fields: {
+                        count: dataCount, // debug var to identify missing values...
+                        alpha: milli_mean_int(v.alpha), //use mean * 1000 (int for efficiency)
+                        beta: milli_mean_int(v.beta),
+                        gamma: milli_mean_int(v.gamma)
+                    },
+                    timestamp: (Date.now() * 1000000)
+                };
+
+                const Http = new XMLHttpRequest();
+                const url = "http://" + location.hostname + ":8086/write?db=mydb";
+                Http.open("POST", url);
+                Http.send(
+                    "" + databaseEntry.key +
+                    ",label=" + databaseEntry.tags.label +
+                    ",subject=" + databaseEntry.tags.subject +
+                    " count=" + dataCount +
+                    ",alpha=" + databaseEntry.fields.alpha +
+                    ",beta=" + databaseEntry.fields.beta +
+                    ",gamma=" + databaseEntry.fields.gamma);
+
+                Http.onreadystatechange = function () {
+                    document.getElementById("debug").innerHTML = "Saved entry to Database! (" + dataCount + ")";
+                }
+            } else {
+                document.getElementById("debug").innerHTML = "OrientationBuffer is empty!"
+            }
         };
 
         let interval;// Global variable for setInterval setting/clearing.
 
         startRecording = function () {
+            document.getElementById("debug").innerHTML = "Starting Recording...";
             let label = document.getElementById("label").value;
             let subject = document.getElementById("subject").value;
 
             if (label) {
                 // If training label is selected
-                document.getElementById("debug").innerHTML = "Recording... (" + dataCount + ")";
                 window.clearInterval(interval);
 
                 // Write DeviceOrientation to buffer
@@ -75,6 +120,8 @@
         };
 
         document.addEventListener("DOMContentLoaded", function () {
+            document.getElementById("subject").value=Math.floor((1 + Math.random()) * 0x10000).toString(16); //pick a random id
+
             document.getElementById('record').onchange = function () {
                 if (this.checked) {
                     // If slider activated
@@ -86,60 +133,6 @@
                 }
             }
         });
-
-    influent
-        .createHttpClient({
-            server: [
-                {
-                    protocol: "http",
-                    host:     location.hostname,
-                    port: 8086
-                    //protocol: "https",
-                    //host:     "portal.teco.edu/css",
-                    //port: 443
-                }
-            ],
-            username: "css19",
-            password: "css19",
-
-            database: "css19"
-        })
-        .then(function(client) {
-            //set the write function to empty our buffer (called periodically, see above)
-            write=function()
-            {
-                if(orientation_buf.alpha.length>0)
-                {
-                    data_count++;
-
-                    var v=orientation_buf; //copy old buffer to var to avoid async effects on write
-                    orientation_buf=new OrientationValues(); // reset buffer
-
-                    function milli_mean_int(values) {
-                        var sum = values.reduce(function(a, b) { return a + b; });
-                        return Math.floor(sum * 1000 / values.length);
-                    }
-
-                    client.write({
-                        key: "orientation",
-                        tags: {
-                            label: document.getElementById("label").value,
-                            subject: document.getElementById("subject").value
-                        },
-                        fields: {
-                            count: data_count, // debug var to identify missing values...
-                            alpha: milli_mean_int(v.alpha), //use mean * 1000 (int for efficiency)
-                            beta: milli_mean_int(v.beta),
-                            gamma: milli_mean_int(v.gamma)
-                        },
-                        timestamp: (Date.now() * 1000000)
-                    })
-                        .then(function() {
-                            document.getElementById("debug").innerHTML = "Recording... (" + data_count + ")";
-                        });
-                }
-            }
-        })
 
     </script>
 </head>
