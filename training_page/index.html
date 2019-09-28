@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Training</title>
+    <link rel="stylesheet" href="training.css">
+
+    <script src="bundle.js"></script>
+
+</head>
+<div class="main">
+    <form>
+
+        <b>Label:</b><br>
+        <select id="label">
+            <option value="Jumping">Standing</option>
+            <option value="Walking">Walking</option>
+            <option value="Sitting">Running</option>
+        </select><br>
+
+        <b>Record:</b><br>
+        <label class="switch">
+            <input type="checkbox" id="record">
+            <div class="slider round"></div>
+        </label>
+        <br>
+
+        <b>Subject:</b><br>
+        <input type="text" id="subject"><br>
+    </form>
+
+    <br>
+
+    <p id="debug">Not recording.</p>
+
+</div>
+
+</html>
