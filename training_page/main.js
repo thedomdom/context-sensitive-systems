@@ -7,8 +7,6 @@ const influx = new Influx.InfluxDB({
     database: 'training'
 });
 
-console.log("Test");
-
 // Global variable to store current values.
 let orientation_buf;
 
@@ -30,7 +28,8 @@ orientation_buf = new OrientationValues(); // start empty
 const UPLOAD_RATE = 20; // How many data points are uploaded per second?
 let dataCount = 0; // How many data points have been recorded/uploaded so far?
 
-let write = function () {
+// Write values in buffer to database (as one point)
+const write = function () {
     if (orientation_buf.alpha.length > 0) {
         dataCount++;
 
@@ -71,7 +70,8 @@ let write = function () {
     }
 };
 
-startRecording = function () {
+// Start Measurements and trigger periodic uploads
+const startRecording = function () {
     document.getElementById("debug").innerHTML = "Starting Recording...";
     let label = document.getElementById("label").value;
 

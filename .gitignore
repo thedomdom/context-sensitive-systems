@@ -1,3 +1,5 @@
 /training_page/package-lock.json
 /training_page/node_modules/influx/
 /training_page/bundle.js
+/data_science/.ipynb_checkpoints/
+/data_science/data.csv
