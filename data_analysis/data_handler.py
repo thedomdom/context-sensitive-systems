@@ -44,11 +44,6 @@ def aggregate(measurement_frame, aggregates=None):
 # noinspection PyPep8Naming
 def split_x_y(aggregated_frame):
     # Split the DataFrame into Measurements and Labels
-    aggregated_frame = aggregated_frame.sort_values(by=['subject', 'time'], axis=0)
-    aggregated_array = aggregated_frame.to_numpy()
-    #    enc = OneHotEncoder(handle_unknown='ignore')
-    #    enc.fit(aggregated_array[:,-2].reshape(-1,1))
-    #    y = enc.transform(aggregated_array[:,-2].reshape(-1,1)).toarray()
-    y = aggregated_array[:, -2]
-    X = aggregated_array[:, :-2]
+    y = aggregated_frame["label"]
+    X = aggregated_frame.drop(["subject", "label"], axis=1)
     return X, y
